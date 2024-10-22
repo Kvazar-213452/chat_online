@@ -1,44 +1,40 @@
+from flask import Flask, request, jsonify
 import json
-from flask import Flask
-from flask_socketio import SocketIO, send
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'mysecret'
-socketio = SocketIO(app)
 
-# Ініціалізація списку повідомлень
-messages = []
+if not os.path.exists("messages.json"):
+    with open("messages.json", "w") as file:
+        json.dump({}, file)
 
-# Завантаження старих повідомлень з файлу
-def load_messages():
-    global messages
+@app.route('/masg', methods=['POST'])
+def save_message():
+    user = request.form.get('user')
+    masg = request.form.get('masg')
+
+    if not user or not masg:
+        return jsonify({"error": "Missing user or masg parameter"}), 400
+
+    with open('messages.json', 'r') as file:
+        messages = json.load(file)
+
+    messages[user] = masg
+
+    with open('messages.json', 'w') as file:
+        json.dump(messages, file, indent=4)
+
+    return jsonify({"success": True, "message": "Message saved successfully"}), 201
+
+@app.route('/get_data', methods=['POST'])
+def get_data():
     try:
-        with open('messages.json', 'r') as f:
-            messages = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        messages = []
+        with open('messages.json', 'r') as file:
+            messages = json.load(file)
+        return jsonify(messages), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# Збереження повідомлень у файл
-def save_messages():
-    with open('messages.json', 'w') as f:
-        json.dump(messages, f)
-
-@app.route('/')
-def index():
-    return "Чат працює!"
-
-@socketio.on('message')
-def handleMessage(msg):
-    print(f"Повідомлення: {msg}")
-    messages.append(msg)  # Додаємо повідомлення до списку
-    save_messages()       # Зберігаємо в файл
-    send(msg, broadcast=True)  # Надсилає повідомлення всім підключеним клієнтам
-
-@socketio.on('get_messages')
-def handle_get_messages():
-    # Відправляємо старі повідомлення новому клієнту
-    send(messages, broadcast=False)  # Надсилає старі повідомлення лише новому клієнту
 
 if __name__ == '__main__':
-    load_messages()  # Завантажуємо старі повідомлення при запуску сервера
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
