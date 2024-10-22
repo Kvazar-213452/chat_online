@@ -8,5 +8,5 @@ def home():
     return render_template('index.' + config['use_file'], )
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
  

@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify
 import json
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 if not os.path.exists("messages.json"):
     with open("messages.json", "w") as file:
-        json.dump({}, file)
+        json.dump([], file)
 
 @app.route('/masg', methods=['POST'])
 def save_message():
@@ -19,7 +21,7 @@ def save_message():
     with open('messages.json', 'r') as file:
         messages = json.load(file)
 
-    messages[user] = masg
+    messages.append([user, masg])
 
     with open('messages.json', 'w') as file:
         json.dump(messages, file, indent=4)
@@ -35,6 +37,5 @@ def get_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=3000)
