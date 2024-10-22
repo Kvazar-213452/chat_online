@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; margin-bottom: 10px; padding: 5px; }
+        #input { width: 80%; }
+    </style>
+</head>
+<body>
+    <h1>Чат</h1>
+    <div id="messages"></div>
+    <input id="input" type="text" placeholder="Введіть повідомлення...">
+    <button id="send">Надіслати</button>
+
+    <script>
+        const socket = io('http://localhost:5000');
+
+        // Обробка отримання повідомлення
+        socket.on('message', function(data) {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += '<div>' + data + '</div>';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Прокрутка донизу
+        });
+
+        // Обробка старих повідомлень
+        socket.on('old_messages', function(data) {
+            for (const msg of data) {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML += '<div>' + msg + '</div>';
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Прокрутка донизу
+        });
+
+        // Обробка натискання кнопки "Надіслати"
+        document.getElementById('send').onclick = function() {
+            const input = document.getElementById('input');
+            const message = input.value;
+            socket.send(message);
+            input.value = ''; // Очищення поля вводу
+        };
+
+        // Запит старих повідомлень при завантаженні сторінки
+        window.onload = function() {
+            socket.emit('get_messages'); // Запит на старі повідомлення
+        };
+    </script>
+</body>
+</html>
